@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -8,11 +9,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using UdemyRealWorldUnitTest.Web.Models;
+using UdemyRealWorldUnitTest.Web.Repository;
 
 namespace UdemyRealWorldUnitTest.Web
 {
     public class Startup
     {
+        /*Scaffold-DbContext "Data Source=ASUS\SQLEXPRESS;Initial Catalog=UdemyUnitTestDB;
+        Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;
+            ApplicationIntent=ReadWrite;MultiSubnetFailover=False" Microsoft.EntityFrameworkCore.SqlServer
+            -OutputDir Models*/
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -23,6 +30,19 @@ namespace UdemyRealWorldUnitTest.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //Her hangi bir class ýn contr. IRepository görürse Repositoryden bir nesne öreneði alacak.
+            //bir requestte IRepository görürse her defasýnda gidip ilk oluþturduðu repository kullanýr.
+            //AddTransient ise her seferinde yeni bir nesne örenði oluþturur.
+            
+            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            services.AddDbContext<UdemyUnitTestDBContext>(options =>
+            {
+
+                options.UseSqlServer(Configuration["SqlConStr"]);
+
+
+            }) ;
+
             services.AddControllersWithViews();
         }
 
