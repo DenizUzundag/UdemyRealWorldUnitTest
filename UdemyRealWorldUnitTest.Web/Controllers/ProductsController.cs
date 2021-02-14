@@ -30,17 +30,18 @@ namespace UdemyRealWorldUnitTest.Web.Controllers
         // GET: Products/Details/5
         public async Task<IActionResult> Details(int? id)
         {
+            //id null ise Index sayfasına geri dönücek
             if (id == null)
             {
-                return NotFound();
+                return RedirectToAction("Index");
             }
-
+            //id gönderdik ama veritabanında yoksa notfound dönücek
             var product = await _repository.GetById((int) id); ;
             if (product == null)
             {
                 return NotFound();
             }
-
+            //id null değil var olan bir değerse product view dönsün
             return View(product);
         }
 
@@ -57,11 +58,15 @@ namespace UdemyRealWorldUnitTest.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,Price,Stock,Color")] Product product)
         {
+            //*ilgili metodun içerisinde bir repository metodu kullanıcaksak mock yapmalıyız.
+
+           //model state geçerli olduğu zaman ındex sayfasına yöneliyor mu onu test ediyoruz.
             if (ModelState.IsValid)
             {
                 await _repository.Create(product);
                 return RedirectToAction(nameof(Index));
             }
+            //bir hata verdiğimizde yine aynı sayfaya yöneliyor mu onu test edicez
             return View(product);
         }
 
