@@ -17,7 +17,7 @@ namespace UdemyRealWorldUnitTest.Test
         private readonly Mock<IRepository<Product>> _mockRepo;
         private readonly ProductsController _controller;
         private List<Product> products;
-        
+
         public ProductControllerTest()
         {
             _mockRepo = new Mock<IRepository<Product>>();
@@ -84,13 +84,13 @@ namespace UdemyRealWorldUnitTest.Test
         }
 
         [Fact]
-        public async  void Details_IdInValid_ReturnNotFound()
+        public async void Details_IdInValid_ReturnNotFound()
         {
             //id veritabanında yoksa not Found 404 dönmesini bekliyoruz Status kodunun
 
             Product product = null;
             _mockRepo.Setup(x => x.GetById(0)).ReturnsAsync(product);
-            var result =await _controller.Details(0);
+            var result = await _controller.Details(0);
             var redirect = Assert.IsType<NotFoundResult>(result);
             Assert.Equal<int>(404, redirect.StatusCode);
 
@@ -126,7 +126,7 @@ namespace UdemyRealWorldUnitTest.Test
         public async void CreatePost_InvalidModelState_ReturnView()
         {
             //bir hata oluşturduk
-            //bir hata oluştuğunda aynı sayfada kalam durumu
+            //bir hata oluştuğunda aynı sayfada kalma durumu
             _controller.ModelState.AddModelError("Name", "Name alanı gereklidir");
 
             var result = await _controller.Create(products.First());
@@ -153,7 +153,7 @@ namespace UdemyRealWorldUnitTest.Test
         public async void CreatePOst_ValidModelState_CreateMethodExecute()
         {
             Product newProduct = null;
-                                                //herhangi bir product geleblir
+            //herhangi bir product geleblir
             _mockRepo.Setup(repo => repo.Create(It.IsAny<Product>())).Callback<Product>(x => newProduct = x);
             //bu metot çalıştığında hangi product listesi verildiyse gelen product new producta aktarıldı
 
@@ -163,7 +163,7 @@ namespace UdemyRealWorldUnitTest.Test
 
             //create metodunun çalışıp çalışmadığı doğrulayacağız.
             //en az bir kere çalışasını doğruladık Times.Once
-            _mockRepo.Verify(repo=>repo.Create(It.IsAny<Product>()),Times.Once);
+            _mockRepo.Verify(repo => repo.Create(It.IsAny<Product>()), Times.Once);
 
 
             //id si 1 olan kaydın eklenmesini bekliyoruz
@@ -176,7 +176,7 @@ namespace UdemyRealWorldUnitTest.Test
             _controller.ModelState.AddModelError("Name", "Name alanı gereklidir");
 
             var result = await _controller.Create(products.First());
-                                                                      //hiç çalışmaması
+            //hiç çalışmaması
             _mockRepo.Verify(repo => repo.Create(It.IsAny<Product>()), Times.Never);
         }
 
@@ -196,7 +196,7 @@ namespace UdemyRealWorldUnitTest.Test
         public async void Edit_IdInValid_ReturnNotFound(int productId)
         {
             Product product = null;
-            //edit metodu çalıştığı zaman sahta getbyid metodu çalışacak geriye boş bir product dönücek
+            //edit metodu çalıştığı zaman sahte bir  getbyid metodu çalışacak geriye boş bir product dönücek
             _mockRepo.Setup(repo => repo.GetById(productId)).ReturnsAsync(product);
 
             var result = await _controller.Edit(productId);
@@ -204,7 +204,145 @@ namespace UdemyRealWorldUnitTest.Test
             var redirect = Assert.IsType<NotFoundResult>(result);
 
             Assert.Equal<int>(404, redirect.StatusCode);
-            
+
         }
+
+        [Theory]
+        [InlineData(2)]
+
+        public async void Edit_Action_ReturnProduct(int productId)
+        {
+
+            //verilen id(ürünü olan id) ye sahip product ın dönmesi gerekir
+
+
+            var product = products.First(x => x.Id == productId);
+
+
+            //getbyId yi mockluyoruz
+            _mockRepo.Setup(repo => repo.GetById(productId)).ReturnsAsync(product);
+
+            //controller üzerinden edit methodunu çağırıp var olan bir productId yi verdik.
+            var result = await _controller.Edit(productId);
+
+            //viewResult mı onu test ettik
+            var viewResult = Assert.IsType<ViewResult>(result);
+
+            //modeli alıp iç data ile karşılaştırdık.
+            var resultProduct = Assert.IsAssignableFrom<Product>(viewResult.Model);
+
+            //product id dönen productın idsine eşit mi?
+            Assert.Equal(product.Id, resultProduct.Id);
+
+            Assert.Equal(product.Name, resultProduct.Name);
+        }
+        [Theory]
+        [InlineData(1)]
+        public void EditPost_IdIsNotEqualProduct_ReturnNotFound(int productid)
+        {
+
+            //id si 1 olanı gönderdik ama id si 2 olanı verdik farklı olduğu için not found dönmeli
+            var result = _controller.Edit(2, products.First(x => x.Id == productid));
+
+            var redirect = Assert.IsType<NotFoundResult>(result);
+
+        }
+
+        [Theory]
+        [InlineData(1)]
+        public void EditPost_InValidModelState_ReturnView(int productId)
+        {
+            //hata oluşturduk
+            _controller.ModelState.AddModelError("Name", "");
+            //product id si 1 hemde product idsi 1 olan ürün var ilk aşamayı geçti.
+            var result = _controller.Edit(productId, products.First(x => x.Id == productId));
+            var viewResult = Assert.IsType<ViewResult>(result);
+
+            //gelen datanın bir product nesnesi olup olmadığını tipini kontrol ediyoruz
+
+            Assert.IsType<Product>(viewResult.Model);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        public void EditPost_ValidModelState_ReturnRedirectToIndexAction(int productid)
+        {
+            //modelState is valid olduğu zaman Index sayfasına yönlenme durumu test edildi.
+            var result = _controller.Edit(productid, products.First(x => x.Id == productid));
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+
+            Assert.Equal("Index", redirect.ActionName);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        public void EditPost_ValidModelState_ReturnUpdateMethodExecute(int productid)
+        {
+            var product = products.First(x => x.Id == productid);
+            _mockRepo.Setup(repo => repo.Update(product));
+
+            _controller.Edit(productid,product);
+            //edit methodu çalıştığı zaman update işleminin çalışmasını test ediyoruz
+            _mockRepo.Verify(repo => repo.Update(It.IsAny<Product>()),Times.Once);
+        }
+        [Fact]
+        public async void Delete_IdIsNull_ReturnNotFound()
+        {
+            
+            var result = await _controller.Delete(null);
+            var redirect = Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        public async void Delete_IdIsNotEqualProduct_ReturnNotFound(int productId)
+        {
+            //id si olmayan bir data çekmeye çalışıyoruz.
+            Product product = null;
+            _mockRepo.Setup(repo => repo.GetById(productId)).ReturnsAsync(product);
+            var result = await _controller.Delete(productId);
+            var redirect = Assert.IsType<NotFoundResult>(result);
+        }
+        [Theory]
+        [InlineData(1)]
+        public async void Delete_ActionExecutes_ReturnProduct(int productid)
+        {
+            //idsi var olan product gönderip geriye bir product modeli döndürüyor mu onu test ediyoruz
+
+
+            var product = products.First(x => x.Id == productid);
+            _mockRepo.Setup(repo => repo.GetById(productid)).ReturnsAsync(product);
+            var result = await _controller.Delete(productid);
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.IsAssignableFrom<Product>(viewResult.Model);
+
+
+        }
+        [Theory]
+        [InlineData(1)]
+        public async void DeleteConfirmed_ActionExecutes_ReturnRedirectToIndexAction(int productid)
+        {
+           
+            var result = await _controller.DeleteConfirmed(productid);
+           
+
+            Assert.IsType<RedirectToActionResult>(result);
+        }
+
+        [Theory]
+        [InlineData(1)]
+
+        public async void DeleteConfirmed_ActionExecutes_DeleteMethodExecute(int productid)
+        {
+            var product = products.First(x => x.Id == productid);
+            _mockRepo.Setup(repo => repo.Delete(product));
+
+           await  _controller.DeleteConfirmed(productid);
+            _mockRepo.Verify(repo => repo.Delete(It.IsAny<Product>()), Times.Once);
+        }
+
+
+
     }
 }

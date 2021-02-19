@@ -95,11 +95,13 @@ namespace UdemyRealWorldUnitTest.Web.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Edit(int id, [Bind("Id,Name,Price,Stock,Color")] Product product)
         {
+            //gelen id ile producttan gelen id nin aynı olması gerekir.
             if (id != product.Id)
             {
                 return NotFound();
             }
 
+            //modelState ısvalid ise updaye işemi gerçekleşip index sayfasına dönüyor
             if (ModelState.IsValid)
             {
                
@@ -109,6 +111,8 @@ namespace UdemyRealWorldUnitTest.Web.Controllers
                
                 return RedirectToAction(nameof(Index));
             }
+        //model state hatalıysa edit sayfasına dönüp göndermiş olduğumuz product nesnesini view ile
+        //cshtml göndericek.
             return View(product);
         }
 
@@ -119,7 +123,7 @@ namespace UdemyRealWorldUnitTest.Web.Controllers
             {
                 return NotFound();
             }
-
+            //id ye shaip ürün var mı yok mu onu test edicez .
             var product = await _repository.GetById((int)id);
             if (product == null)
             {
